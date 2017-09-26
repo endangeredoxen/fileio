@@ -72,7 +72,7 @@ class FileReader():
         self.path = path
         self.contains = kwargs.get('contains', '')
         self.contains_OR = kwargs.get('contains_OR', [])
-        self.exact = kwargs.get('exclude', False)
+        self.exact = kwargs.get('exact', True)
         self.header = kwargs.get('header', True)
         self.concat = kwargs.get('concat', True)
         self.exclude = kwargs.get('exclude', [])
@@ -172,7 +172,7 @@ class FileReader():
             self.gui_search()
 
         # If list of files is passed to FileReader with no scan option
-        elif type(self.path) is list and not self.scan:
+        elif type(self.path) is list and self.scan != False:
             self.file_list = self.path
 
         # If list of files is passed to FileReader with a scan option
