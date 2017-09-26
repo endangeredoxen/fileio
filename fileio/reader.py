@@ -14,6 +14,7 @@ try:
     import configparser
 except:
     import ConfigParser as configparser
+import re
 import os
 oswalk = os.walk
 import pandas as pd
@@ -44,6 +45,7 @@ class FileReader():
                 list; default=''
             concat (bool):  True=concatenate all DataFrames into one |
                 False=return a list of DataFrames; default=True
+            exact (bool): uses exact matching in filenames if True else regex
             gui (bool):  True=use a PyQt4 gui prompt to select files |
                 False=search directories automatically; default=False
             labels (list|str): adds a special label column to the DataFrame
@@ -51,6 +53,7 @@ class FileReader():
                 list=one entry per DataFrame added in order of self.file_list
                 str=single label added to all files (ex. today's date,
                 username, etc.)
+            meta2df (bool): if True convert meta to concatenated DataFrame
             read (bool): read the DataFrames after compiling the file_list
             scan (bool): search subdirectories
             split_char (str|list): chars by which to split the filename
@@ -69,12 +72,14 @@ class FileReader():
         self.path = path
         self.contains = kwargs.get('contains', '')
         self.contains_OR = kwargs.get('contains_OR', [])
+        self.exact = kwargs.get('exclude', False)
         self.header = kwargs.get('header', True)
         self.concat = kwargs.get('concat', True)
         self.exclude = kwargs.get('exclude', [])
         self.ext = kwargs.get('ext', '')
         self.gui = kwargs.get('gui', False)
         self.labels = kwargs.get('labels', [])
+        self.meta2df = kwargs.get('meta2df', False)
         self.scan = kwargs.get('scan', False)
         self.read = kwargs.get('read', True)
         self.include_filename = kwargs.get('include_filename', True)
@@ -129,18 +134,45 @@ class FileReader():
         if self.read:
             self.read_files()
 
-    def get_files(self):
+    def files_to_df(self):
+        """
+        Method to convert file list too DataFrame
+
+        Returns:
+            self (FileReader) reference to self
+        .. note:: was originally from the end of the get_files method
+                  butb broken out so can apply more
+        """
+        # Make a DataFrame of the file paths and names
+        self.file_df = pd.DataFrame({'path': self.file_list})
+        if len(self.file_list) > 0:
+            self.file_df['folder'] = \
+                self.file_df.path.apply(
+                       lambda x: os.sep.join(x.split(os.sep)[0:-1]))
+            self.file_df['filename'] = \
+                self.file_df.path.apply(lambda x: x.split(os.sep)[-1])
+            self.file_df['ext'] = \
+                self.file_df.filename.apply(lambda x: os.path.splitext(x)[-1])
+
+            return self
+
+    def get_files(self, reset=True):
         """
         Search directories automatically or manually by gui for file paths to
         add to self.file_list
+
+        Args:
+            reset (bool): set file list to empty if True else files are re-appended
         """
+
+        self.file_list = [] if reset else self.file_list
 
         # Gui option
         if self.gui:
             self.gui_search()
 
         # If list of files is passed to FileReader with no scan option
-        elif type(self.path) is list and self.scan != False:
+        elif type(self.path) is list and not self.scan:
             self.file_list = self.path
 
         # If list of files is passed to FileReader with a scan option
@@ -156,9 +188,16 @@ class FileReader():
         else:
             self.file_list = [self.path]
 
+        self._allfiles = [e for e in self.file_list]
+
         # Filter based on self.contains search string
-        for c in self.contains:
-            self.file_list = [f for f in self.file_list if c in f]
+        for contain in self.contains:
+            if self.exact:
+                self.file_list = [f for f in self.file_list if contain in f]
+            else:
+                pat = re.compile(contain)
+                self.file_list = [f for f in self.file_list if pat.search(f)]
+
         if len(self.contains_OR) > 0:
             files = []
             for c in self.contains_OR:
@@ -167,7 +206,12 @@ class FileReader():
 
         # Filter out exclude
         for exc in self.exclude:
-            self.file_list = [f for f in self.file_list if exc not in f]
+            if self.exact:
+                self.file_list = [f for f in self.file_list if exc not in f]
+            else:
+                pat = re.compile(exc)
+                self.file_list = \
+                    [f for f in self.file_list if not pat.search(f)]
 
         # Filter based on self.ext
         try:
@@ -180,16 +224,9 @@ class FileReader():
                              'meant to scan the directory, please set the '
                              '"scan" parameter to True')
 
-        # Make a DataFrame of file paths and names
-        self.file_df = pd.DataFrame({'path': self.file_list})
-        if len(self.file_list) > 0:
-            self.file_df['folder'] = \
-                self.file_df.path.apply(
-                        lambda x: os.sep.join(x.split(os.sep)[0:-1]))
-            self.file_df['filename'] = \
-                self.file_df.path.apply(lambda x: x.split(os.sep)[-1])
-            self.file_df['ext'] = \
-                self.file_df.filename.apply(lambda x: os.path.splitext(x)[-1])
+        self.files_to_df()
+
+        return self
 
     def gui_search(self):
         """
@@ -218,6 +255,8 @@ class FileReader():
 
         # Uniquify
         self.file_list = list(set(self.file_list))
+
+        return self
 
     def parse_filename(self, filename, df):
         """
@@ -267,12 +306,13 @@ class FileReader():
 
         return df
 
-    def read_files(self):
+    def read_files(self, **kwargs):
         """
         Read the files in self.file_list (assumes all files can be cast into
         pandas DataFrames)
         """
 
+        self.df, self.meta = [], []
         for i, f in enumerate(self.file_list):
 
             # Read the raw data file
@@ -325,16 +365,19 @@ class FileReader():
             # Add filename
             if self.include_filename:
                 temp['Filename'] = f
+                if meta is not None:
+                    meta.ix['Filename', :] = f
+            self.df += [temp]
+            if meta is not None:
+                self.meta += [meta]
 
-            # Add to master
-            if self.concat:
-                self.df = pd.concat([self.df, temp])
-                if meta is not None:
-                    self.meta[f] = meta
-            else:
-                self.df += [temp]
-                if meta is not None:
-                    self.meta += [meta]
+        if self.concat and len(self.df) > 0:
+            self.temp = temp
+            self.df = pd.concat(self.df, axis=0)
+            if len(self.meta) > 0:
+                self.meta = \
+                    pd.concat(self.meta, axis=1).T.reset_index(drop=True) \
+                        if self.meta2df else self.meta
 
     def walk_dir(self, path):
         """
