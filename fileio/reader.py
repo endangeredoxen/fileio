@@ -79,7 +79,7 @@ class FileReader():
         self.ext = kwargs.get('ext', '')
         self.gui = kwargs.get('gui', False)
         self.labels = kwargs.get('labels', [])
-        self.meta2df = kwargs.get('meta2df', False)
+        self.meta2df = kwargs.get('meta2df', True)
         self.scan = kwargs.get('scan', False)
         self.read = kwargs.get('read', True)
         self.include_filename = kwargs.get('include_filename', True)
@@ -121,13 +121,6 @@ class FileReader():
             self.split_char = list(self.split_char)
         if self.split_values is None:
             self.split_values = []
-
-        if self.concat:
-            self.df = pd.DataFrame()
-            self.meta = {}
-        else:
-            self.df = []
-            self.meta = []
 
         self.get_files()
 
