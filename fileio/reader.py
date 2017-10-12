@@ -291,7 +291,7 @@ class FileReader():
 
         # file_splits = filename.split(self.file_split)
         if len(self.split_values)==0 or \
-                self.split_values[0].lower() == 'usetags':
+                str(self.split_values[0]).lower() == 'usetags':
             self.split_values = tag_splits.copy()
         for i, f in enumerate(self.split_values):
             if f is not None and i < len(file_splits) and f != file_splits[i]:
