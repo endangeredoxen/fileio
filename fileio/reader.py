@@ -79,7 +79,7 @@ class FileReader():
         self.ext = kwargs.get('ext', '')
         self.gui = kwargs.get('gui', False)
         self.labels = kwargs.get('labels', [])
-        self.meta2df = kwargs.get('meta2df', False)
+        self.meta2df = kwargs.get('meta2df', True)
         self.scan = kwargs.get('scan', False)
         self.read = kwargs.get('read', True)
         self.include_filename = kwargs.get('include_filename', True)
@@ -298,7 +298,7 @@ class FileReader():
 
         # file_splits = filename.split(self.file_split)
         if len(self.split_values)==0 or \
-                self.split_values[0].lower() == 'usetags':
+                str(self.split_values[0]).lower() == 'usetags':
             self.split_values = tag_splits.copy()
         for i, f in enumerate(self.split_values):
             if f is not None and i < len(file_splits) and f != file_splits[i]:
