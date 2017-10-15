@@ -122,13 +122,6 @@ class FileReader():
         if self.split_values is None:
             self.split_values = []
 
-        if self.concat:
-            self.df = pd.DataFrame()
-            self.meta = {}
-        else:
-            self.df = []
-            self.meta = []
-
         self.get_files()
 
         if self.read:
