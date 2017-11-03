@@ -19,6 +19,7 @@ import pandas as pd
 import pdb
 import re
 import ast
+import stat
 try:
     import win32clipboard
 except Exception:
@@ -107,8 +108,8 @@ def convert_rst(file_name, stylesheet=None):
 
             with open(file_dest, 'w') as output:
                 output.write(html)
-                
-                
+
+
 def read_csv(file_name, **kwargs):
     """
     Wrapper for pandas.read_csv to deal with kwargs overload
@@ -145,14 +146,13 @@ def read_csv(file_name, **kwargs):
     return pd.read_csv(file_name, **kwargs)
 
 
-
 def set_filemode(name, stmode='r'):
     """
     Set file mode to read or write
 
     Args:
         name (str): full path to file
-    
+
     Keyword Args:
         stmode (str or stat.ST_MODE, ``r``):  ``r``, ``w``, or stat.ST_MODE
 
@@ -161,7 +161,7 @@ def set_filemode(name, stmode='r'):
     """
     if not os.path.isfile(name):
         raise ValueError('not a valid file: ' + name)
-        
+
     if stmode == 'r':
         stmode = stat.S_IREAD
 
