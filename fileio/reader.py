@@ -762,6 +762,8 @@ class FileReader():
                 self.meta = \
                     pd.concat(self.meta, axis=1).T.reset_index(drop=True) \
                         if self.meta2df else self.meta
+            elif self.meta2df:
+                self.meta = pd.DataFrame()
 
     def walk_dir(self, path):
         """

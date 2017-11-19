@@ -19,6 +19,7 @@ import pandas as pd
 import pdb
 import re
 import ast
+import stat
 try:
     import win32clipboard
 except Exception:
@@ -144,6 +145,37 @@ def read_csv(file_name, **kwargs):
 
     return pd.read_csv(file_name, **kwargs)
 
+
+def set_filemode(name, stmode='r'):
+    """
+    Set file mode to read or write
+
+    Args:
+        name (str): full path to file
+
+    Keyword Args:
+        stmode (str or stat.ST_MODE, ``r``):  ``r``, ``w``, or stat.ST_MODE
+
+    Returns:
+        name (str): name parameter passed through
+    """
+    if not os.path.isfile(name):
+        raise ValueError('not a valid file: ' + name)
+
+    if stmode == 'r':
+        stmode = stat.S_IREAD
+
+    if stmode == 'w':
+        stmode = stat.S_IWRITE
+
+    mode_ = os.stat(name)[stat.ST_MODE]
+
+    if stmode == mode_:
+        return
+
+    os.chmod(name, stmode)
+
+    return name
 
 def str_2_dtype(val, ignore_list=False):
     """
