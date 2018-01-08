@@ -7,6 +7,4 @@ __url__       = 'https://github.com/endangeredoxen/fileio'
 from . config import ConfigFile
 from . html import Dir2HTML
 from . reader import FileReader
-from . utilities import convert_rst
-from . utilities import read_csv
-from . utilities import str_2_dtype
+from . utilities import *

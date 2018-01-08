@@ -20,6 +20,7 @@ import pdb
 import re
 import ast
 import stat
+import sys
 try:
     import win32clipboard
 except Exception:
@@ -27,6 +28,7 @@ except Exception:
 from docutils import core
 osjoin = os.path.join
 st = pdb.set_trace
+print_std = print
 
 
 def convert_rst(file_name, stylesheet=None):
@@ -110,6 +112,33 @@ def convert_rst(file_name, stylesheet=None):
                 output.write(html)
 
 
+def print(text, verbose=True, post_text='', line_len=79,
+          start='\r', end='\n', **kwargs):
+    """
+    Custom print wrapper with fixed line length and optional
+    completion text.  If start is not a new line char, message
+    writes over existing line
+
+    Args:
+        text (str):  main text to display
+        verbose (bool):  toggle print text on/off
+        post_text (str):  text to append at end of line
+        line_len (int):  length of message; shorter text strings filled
+            with '.'
+        start (str):  initial text (such as new line char)
+        end (str):  ending text (such as new line char)
+        **kwargs:  python print function keyword args
+
+    """
+
+    text = start + text
+    text += '.' * (line_len - len(text)) + post_text
+
+    if verbose:
+        print_std(text, end=end)
+        sys.stdout.flush()
+
+
 def read_csv(file_name, **kwargs):
     """
     Wrapper for pandas.read_csv to deal with kwargs overload
@@ -176,6 +205,7 @@ def set_filemode(name, stmode='r'):
     os.chmod(name, stmode)
 
     return name
+
 
 def str_2_dtype(val, ignore_list=False):
     """
