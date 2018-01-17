@@ -127,10 +127,6 @@ class FileReader():
         # Get the list of data filenames
         self.get_filenames()
 
-        # Get split values if not provided
-        if len(self.split_values) == 0:
-            self.get_split_values()
-        
         # Read the data files
         if self.read:
             self.read_files()
@@ -145,17 +141,24 @@ class FileReader():
                   butb broken out so can apply more
         """
         # Make a DataFrame of the file paths and names
-        self.file_df = pd.DataFrame({'path': self.file_list})
+        self.file_df = pd.DataFrame({'Filepath': self.file_list})
         if len(self.file_list) > 0:
-            self.file_df['folder'] = \
-                self.file_df.path.apply(
+            self.file_df['Folder'] = \
+                self.file_df.Filepath.apply(
                        lambda x: os.sep.join(x.split(os.sep)[0:-1]))
-            self.file_df['filename'] = \
-                self.file_df.path.apply(lambda x: x.split(os.sep)[-1])
+            self.file_df['Filename'] = \
+                self.file_df.Filepath.apply(lambda x: x.split(os.sep)[-1])
             self.file_df['ext'] = \
-                self.file_df.filename.apply(lambda x: os.path.splitext(x)[-1])
-
-            return self
+                self.file_df.Filename.apply(lambda x: os.path.splitext(x)[-1])
+        
+        # Add split values
+        for irow, row in self.file_df.iterrows():
+            split_vals = self.parse_filename(row['Filename'])
+            for k, v in split_vals.items():
+                self.file_df.loc[irow, k] = \
+                    util.str_2_dtype(v, ignore_list=True)
+        
+        return self
 
     def get_filenames(self, reset=True):
         """
@@ -229,28 +232,6 @@ class FileReader():
 
         return self
 
-    def get_split_values(self):
-        """
-        Check to see if split values can be determined directly from 
-        filenames
-        """
-        
-        self.split_values = []
-        for ifile, file in enumerate(self.file_list):
-            if self.tag_char in file:
-                # Remove path
-                file = [file.split(os.sep)[-1]]
-                for sc in self.split_char:
-                    new_file = []
-                    for f in file:
-                        new_file += f.split(sc)
-                for tag in new_file:
-                    if self.tag_char in tag:
-                        self.split_values += [tag.split(self.tag_char)[0]]
-                    else:
-                        self.split_values += ['Label']
-                break
-    
     def gui_search(self):
         """
         Search for files using a PyQt4 gui
@@ -281,19 +262,17 @@ class FileReader():
 
         return self
 
-    def parse_filename(self, filename, df):
+    def parse_filename(self, filename):
         """
         Parse the filename to retrieve attributes for each file
 
         Args:
             filename (str): name of the file
-            df (pandas.DataFrame): DataFrame containing the data found in
-                filename
-
+            
         Returns:
             updated DataFrame
         """
-
+        
         filename = filename.split(os.path.sep)[-1]  # remove the directory
         filename = os.path.splitext(filename)[0] # remove the extension
         file_splits = []
@@ -303,7 +282,8 @@ class FileReader():
             if i == 0:
                 file_splits = filename.split(sc)
             else:
-                file_splits = [f.split(sc) for f in file_splits]
+                file_splits = [f.split(sc) if sc in f else f 
+                               for f in file_splits]
 
         if len(self.split_char) > 1:
             file_splits = [item for sublist in file_splits for item in sublist]
@@ -312,22 +292,29 @@ class FileReader():
         if self.skip_initial_space:
             file_splits = [f.lstrip(' ') for f in file_splits]
 
-        # Remove tag_char from split_values
-        tag_splits = file_splits.copy()
+        # Get the filename tags and values
+        tags = []
+        values = []
         for i, fs in enumerate(file_splits):
-            if self.tag_char is not None and self.tag_char in fs:
-                tag_splits[i] = file_splits[i].split(self.tag_char)[0]
-                file_splits[i] = file_splits[i].split(self.tag_char)[1]
+            vals = fs.split(self.tag_char)
+            if len(vals) > 1:
+                tags += [vals[0]]
+                values += [vals[1]]
+            else:
+                tags += ['Label']
+                values += [vals[0]]
 
-        # file_splits = filename.split(self.file_split)
-        if len(self.split_values)==0 or \
-                str(self.split_values[0]).lower() == 'usetags':
-            self.split_values = tag_splits.copy()
-        for i, f in enumerate(self.split_values):
-            if f is not None and i < len(file_splits) and f != file_splits[i]:
-                df[f] = util.str_2_dtype(file_splits[i], ignore_list=True)
+        # Override tags
+        if len(self.split_values) > 0:
+            for j in range(0, min(len(tags), len(self.split_values))):
+                tags[j] = self.split_values[j]
 
-        return df
+        # Make a dict of tags: values and return
+        non_labels = [f for f in tags if f != 'Label']
+        if len(non_labels) == 0:
+            return {}
+        else:
+            return dict(zip(tags, values))
 
     def read_files(self, **kwargs):
         """
@@ -361,28 +348,20 @@ class FileReader():
                                  'valid and uncorrupted? Or do you have the '
                                  'wrong read function specified?'
                                  % (f, self.read_func))
-            # Add optional info to the table
-            if type(self.labels) is list and len(self.labels) > i:
-                temp['Label'] = self.labels[i]
-            elif self.labels == '#':
-                temp['Label'] = i
-            elif type(self.labels) is str:
-                temp['Label'] = self.labels
-
-            # Optionally parse the filename to add new columns to the table
-            if hasattr(self, 'split_values') and type(self.split_values) is \
-                    not list:
-                self.split_values = [self.split_values]
-            if len(self.split_values) > 0:
-                temp = self.parse_filename(f, temp)
-
             # Add filename
             if self.include_filename:
-                temp['Filename'] = f
+                temp['Filepath'] = f
+
                 if type(meta) is pd.DataFrame or type(meta) is dict:
-                    meta['Filename'] = f
+                    meta['Filepath'] = f
+
                 elif type(meta) is pd.Series:
-                    meta.ix['Filename', :] = f
+                    meta.ix['Filepath', :] = f
+                
+                # Join file tags
+                temp = pd.merge(temp, self.file_df, on='Filepath')
+            
+
             self.df += [temp]
             if meta is not None:
                 self.meta += [meta]
