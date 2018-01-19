@@ -331,11 +331,15 @@ class FileReader():
                 if self.verbose:
                     if self.counter:
                         # Print a file counter
-                        counter = '[%s/%s]' % ((i+1), len(self.file_list))
+                        counter = '[%s/%s = %.1f%%]' % (i, len(self.file_list), 
+                                                        i/len(self.file_list)*100)
                         util.print('Reading files', end='', post_text=counter,
                                    line_len=self.line_len)
 
+                verbose = self.kwargs['verbose']
+                self.kwargs['verbose'] = False
                 temp = self.read_func(f, **self.kwargs)
+                self.kwargs['verbose'] = verbose
 
                 if type(temp) is tuple:
                     temp, meta = temp
