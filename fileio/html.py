@@ -79,7 +79,7 @@ class Dir2HTML():
 
         self.get_files(self.from_file)
         
-        if len(self.files) > 0
+        if len(self.files) > 0:
             if self.build_rst:
                 self.make_html()
             self.filter()
