@@ -78,13 +78,15 @@ class Dir2HTML():
             self.ext = [f.lower() for f in self.ext]
 
         self.get_files(self.from_file)
-        if self.build_rst:
-            self.make_html()
-        self.filter()
-        self.files = self.files.drop_duplicates().reset_index(drop=True)
-        self.nan_to_str()
-        self.make_links()
-        self.make_ul()
+        
+        if len(self.files) > 0
+            if self.build_rst:
+                self.make_html()
+            self.filter()
+            self.files = self.files.drop_duplicates().reset_index(drop=True)
+            self.nan_to_str()
+            self.make_links()
+            self.make_ul()
 
     def df_to_xml(self, df, parent_node=None, parent_name=''):
         """
@@ -230,7 +232,7 @@ class Dir2HTML():
             self.files = pd.DataFrame(self.files)
 
             # Sort the files
-            if self.natsort:
+            if self.natsort and len(self.files) > 0:
                 temp = self.files.set_index('full_path')
                 self.files = \
                     temp.reindex(index=natsorted(temp.index)).reset_index()
