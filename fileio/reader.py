@@ -336,7 +336,7 @@ class FileReader():
                         util.print('Reading files', end='', post_text=counter,
                                    line_len=self.line_len)
 
-                verbose = self.kwargs['verbose']
+                verbose = self.kwargs['verbose'] if 'verbose' in self.kwargs else self.verbose
                 self.kwargs['verbose'] = False
                 temp = self.read_func(f, **self.kwargs)
                 self.kwargs['verbose'] = verbose
