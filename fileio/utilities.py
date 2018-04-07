@@ -5,7 +5,6 @@
 __author__    = 'Steve Nicholes'
 __copyright__ = 'Copyright (C) 2017 Steve Nicholes'
 __license__   = 'GPLv3'
-__version__   = '0.1.0'
 __url__       = 'https://github.com/endangeredoxen/fileio'
 
 
@@ -69,7 +68,6 @@ def convert_rst(file_name, stylesheet=None):
 
     # Case of figures
     imgs = [f for f in rst if 'figure::' in f]
-
     for img in imgs:
         img = img.replace('.. figure:: ', '').replace('\n', '')
         if ' ' in img:
@@ -84,7 +82,6 @@ def convert_rst(file_name, stylesheet=None):
 
     # Case of substituted images
     imgs = [f for f in rst if 'image::' in f]
-
     for img in imgs:
         img = img.replace('.. image:: ', '').replace('\n', '')
         if ' ' in img:
@@ -99,9 +96,12 @@ def convert_rst(file_name, stylesheet=None):
 
     # Case of links
     links = [f for f in rst if ">`_" in f]
-
     for link in links:
-        link = re.search("<(.*)>`_", link).group(1)
+        try:
+            link = re.search("<(.*)>`_", link).group(1)
+        except:
+            print('invalid rst link: "%s"' % link)
+            continue
         if ' ' in link:
             link_ns = link.replace(' ','')
             idx = html.find(link_ns)
