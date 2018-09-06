@@ -371,7 +371,8 @@ class FileReader():
                 self.meta += [meta]
 
         if self.verbose:
-            util.print('Reading files', end='\n', post_text='done!',
+            util.print('Reading files', end='\n', 
+                       post_text='done!' + ' ' * max(0, len(counter) - 5),
                        line_len=self.line_len)
 
         if self.concat and len(self.df) > 0:
