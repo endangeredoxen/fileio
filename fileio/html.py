@@ -78,12 +78,12 @@ class Dir2HTML():
             self.ext = [f.lower() for f in self.ext]
 
         self.get_files(self.from_file)
-        
+
         if len(self.files) > 0:
             if self.build_rst:
                 self.make_html()
             self.filter()
-            self.files = self.files.drop_duplicates().reset_index(drop=True)
+            self.drop_duplicates()
             self.nan_to_str()
             self.make_links()
             self.make_ul()
@@ -161,6 +161,22 @@ class Dir2HTML():
                                node, parent_name, set_id='image_link')
 
         return node
+
+    def drop_duplicates(self):
+        """
+        Remove duplicate values and for image + html, reduce to one link
+        """
+
+        # Drop complete duplicates
+        self.files = self.files.drop_duplicates().reset_index(drop=True)
+
+        # Condense html + image file pairs
+        dups = self.files['filename'].duplicated()
+        dup_idx = list(dups[dups].index)
+        for ii, idx in enumerate(dup_idx):
+            if self.files.loc[idx, 'ext'] != 'html':
+                dup_idx[ii] = idx - 1
+        self.files = self.files.drop(dup_idx).reset_index(drop=True)
 
     def get_files(self, from_file):
         """
