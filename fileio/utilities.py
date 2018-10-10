@@ -83,10 +83,12 @@ def convert_rst(file_name, stylesheet=None):
     # Case of substituted images
     imgs = [f for f in rst if 'image::' in f]
     for img in imgs:
-        img = img.replace('.. image:: ', '').replace('\n', '')
+        img = img.replace('.. image:: ', '').replace('\n', '').lstrip()
         if ' ' in img:
-            img_ns = img.replace(' ','')
+            img_ns = img.replace(' ','').replace('\\', '')
             idx = html.find(img_ns) - 5
+            if idx < 0:
+                continue
             old = 'alt="%s" src="%s"' % (img_ns, img_ns)
             new = 'alt="%s" src="%s"' % (img, img)
             html = html[0:idx] + new + html[idx+len(old):]
