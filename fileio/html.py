@@ -70,6 +70,7 @@ class Dir2HTML():
         self.rst = ''
         self.rst_css = kwargs.get('rst_css', None)
         self.show_ext = kwargs.get('show_ext', False)
+        self.ul = '<ul>'
         self.use_relative = kwargs.get('use_relative', True)
 
         self.ext = ext
