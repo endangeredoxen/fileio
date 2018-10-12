@@ -64,6 +64,7 @@ class Dir2HTML():
         self.exclude = kwargs.get('exclude',[])
         self.files = []
         self.from_file = kwargs.get('from_file', False)
+        self.merge_html = kwargs.get('merge_html', True)
         self.natsort = kwargs.get('natsort', True)
         self.onclick = kwargs.get('onclick', None)
         self.onmouseover = kwargs.get('onmouseover', None)
@@ -172,12 +173,13 @@ class Dir2HTML():
         self.files = self.files.drop_duplicates().reset_index(drop=True)
 
         # Condense html + image file pairs
-        dups = self.files['filename'].duplicated()
-        dup_idx = list(dups[dups].index)
-        for ii, idx in enumerate(dup_idx):
-            if self.files.loc[idx, 'ext'] != 'html':
-                dup_idx[ii] = idx - 1
-        self.files = self.files.drop(dup_idx).reset_index(drop=True)
+        if self.merge_html:
+            dups = self.files['filename'].duplicated()
+            dup_idx = list(dups[dups].index)
+            for ii, idx in enumerate(dup_idx):
+                if self.files.loc[idx, 'ext'] != 'html':
+                    dup_idx[ii] = idx - 1
+            self.files = self.files.drop(dup_idx).reset_index(drop=True)
 
     def get_files(self, from_file):
         """
