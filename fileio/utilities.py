@@ -251,8 +251,9 @@ def str_2_dtype(val, ignore_list=False):
         k = []
         v = []
         for t in val:
-            k += [str_2_dtype(t.split(':')[0], ignore_list=True)]
-            v += [str_2_dtype(':'.join(t.split(':')[1:]))]
+            tt = re.split(''':(?=(?:[^'"]|'[^']*'|"[^"]*")*$)''', t)
+            k += [str_2_dtype(tt[0], ignore_list=True)]
+            v += [str_2_dtype(':'.join(tt[1:]))]
         return dict(zip(k,v))
     # tuple
     if val[0] == '(' and val[-1] == ')' and ',' in val:
@@ -307,6 +308,6 @@ def str_2_dtype(val, ignore_list=False):
                 else:
                     return v[0].rstrip().lstrip()
             else:
-                return val.rstrip().lstrip()
+                return val.rstrip().lstrip().strip('\'"')
 
 
