@@ -308,6 +308,10 @@ def str_2_dtype(val, ignore_list=False):
                 else:
                     return v[0].rstrip().lstrip()
             else:
-                return val.rstrip().lstrip().strip('\'"')
+                val = val.rstrip().lstrip()
+                if val[0] in ['"', "'"] and val[-1] in ['"', "'"]:
+                    return val.strip('\'"')
+                else:
+                    return val
 
 
