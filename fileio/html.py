@@ -119,10 +119,10 @@ class Dir2HTML():
                 child.set('onmouseover', self.onmouseover+"('"+value+"')")
             if self.onclick and not dir:
                 child.set('onclick', self.onclick+"('"+value+"')")
-                child.set('href', 'javascript:void(0)')
+                child.set('href', self.href(value))
             elif self.onclick and dir:
                 child.set('onclick', self.onclick+"('"+value+"')")
-                child.set('href', 'javascript:void(0)')
+                child.set('href', self.href(value))
             child.text= name
             return node
 
@@ -144,10 +144,11 @@ class Dir2HTML():
                                        g.html_path.iloc[row], node,
                                        parent_name, set_id='image_link')
                 else:
-                    current_path_list = g.full_path.iloc[0].split(os.path.sep)
-                    path_idx = current_path_list.index(n)
-                    folder_path = \
-                        os.path.sep.join(current_path_list[0:path_idx+1])
+                    try:
+                        idx = g.full_path.apply(lambda x: len(x.split(os.path.sep))).idxmin()
+                    except:
+                        idx = g.full_path.apply(lambda x: len(x.split(os.path.sep))).argmin()
+                    folder_path = os.sep.join(g.loc[idx, 'full_path'].split(os.sep)[0:-1])
                     if self.use_relative:
                         folder_path = folder_path.replace(self.base_path + '\\', '')
                         folder_path = folder_path.replace('\\', '/')
@@ -174,7 +175,8 @@ class Dir2HTML():
 
         # Condense html + image file pairs
         if self.merge_html:
-            dups = self.files['filename'].duplicated()
+            subdir_cols = [f for f in self.files.columns if 'subdir' in f]
+            dups = self.files[subdir_cols + ['filename']].duplicated()
             dup_idx = list(dups[dups].index)
             for ii, idx in enumerate(dup_idx):
                 if self.files.loc[idx, 'ext'] != 'html':
@@ -267,6 +269,13 @@ class Dir2HTML():
 
         self.files = self.files.reset_index(drop=True)
 
+    def href(self, value):
+        """
+        Make the auto-open href
+        """
+
+        return os.path.splitext('?id=%s' % value.replace(' ', '%20'))[0]
+
     def make_html(self):
         """
         Build html files from rst files
@@ -329,4 +338,3 @@ class Dir2HTML():
         """
 
         self.files = self.files.replace(np.nan, 'nan')
-
