@@ -150,14 +150,14 @@ class FileReader():
                 self.file_df.Filepath.apply(lambda x: x.split(os.sep)[-1])
             self.file_df['ext'] = \
                 self.file_df.Filename.apply(lambda x: os.path.splitext(x)[-1])
-        
+
         # Add split values
         for irow, row in self.file_df.iterrows():
             split_vals = self.parse_filename(row['Filename'])
             for k, v in split_vals.items():
                 self.file_df.loc[irow, k] = \
                     util.str_2_dtype(v, ignore_list=True)
-        
+
         return self
 
     def get_filenames(self, reset=True):
@@ -268,11 +268,11 @@ class FileReader():
 
         Args:
             filename (str): name of the file
-            
+
         Returns:
             updated DataFrame
         """
-        
+
         filename = filename.split(os.path.sep)[-1]  # remove the directory
         filename = os.path.splitext(filename)[0] # remove the extension
         file_splits = []
@@ -282,7 +282,7 @@ class FileReader():
             if i == 0:
                 file_splits = filename.split(sc)
             else:
-                file_splits = [f.split(sc) if sc in f else f 
+                file_splits = [f.split(sc) if sc in f else f
                                for f in file_splits]
 
         if len(self.split_char) > 1:
@@ -331,7 +331,7 @@ class FileReader():
                 if self.verbose:
                     if self.counter:
                         # Print a file counter
-                        counter = '[%s/%s = %.1f%%]' % (i, len(self.file_list), 
+                        counter = '[%s/%s = %.1f%%]' % (i, len(self.file_list),
                                                         i/len(self.file_list)*100)
                         util.print('Reading files', end='', post_text=counter,
                                    line_len=self.line_len)
@@ -361,17 +361,17 @@ class FileReader():
 
                 elif type(meta) is pd.Series:
                     meta.ix['Filepath', :] = f
-                
+
                 # Join file tags
                 temp = pd.merge(temp, self.file_df, on='Filepath')
-            
+
 
             self.df += [temp]
             if meta is not None:
                 self.meta += [meta]
 
         if self.verbose:
-            util.print('Reading files', end='\n', 
+            util.print('Reading files', end='\n',
                        post_text='done!' + ' ' * max(0, len(counter) - 5),
                        line_len=self.line_len)
 

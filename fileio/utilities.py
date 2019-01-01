@@ -26,8 +26,72 @@ except Exception:
     pass
 from docutils import core
 osjoin = os.path.join
+osexists = os.path.exists
 st = pdb.set_trace
 print_std = print
+
+
+def align_values(df, rjust=True, first_col=2):
+    """
+    Pad the value and column names of a dataframe with space to line them up
+        for a more readable format
+
+    Args:
+        df (pd.DataFrame): data to align
+        rjust (bool):  right justification enabled (if false, left justified)
+        first_col (int): extra whitespace for first columns [default = 2]
+
+    Return:
+        update DataFrame
+
+    """
+
+    df = df.copy()
+    names = []
+    columns = df.columns
+    for icol, col in enumerate(columns):
+        # Find the longest element in the column
+        value_len = max([len(str(f)) for f in df[col].unique()])
+        name_len = len(col)
+        width = max(value_len, name_len) + (first_col if icol == 0 else 0)
+
+        # Adjust the column names
+        if rjust:
+            names += [' ' * (width - len(col)) + col]
+        else:
+            names += [col + ' ' * (width - len(col))]
+
+        # Adjust the column values
+        df[col] = df[col].astype(str)
+        if rjust:
+            df[col] = df[col].apply(lambda x: ' ' * (width - len(x)) + x)
+        else:
+            df[col] = df[col].apply(lambda x: x + ' ' * (width - len(x)))
+
+    df.columns = names
+
+    return df
+
+
+def check_file(filename, verbose=True):
+    """
+    Check if file exists
+
+    Args:
+        filename (str): path to file
+
+    Returns:
+        boolean True if found
+
+    """
+
+    # Check if file exists
+    if os.path.exists(filename):
+        return True
+    else:
+        if verbose:
+            print('MissingFileError: %s could not be found' % filename)
+        return False
 
 
 def convert_rst(file_name, stylesheet=None):
@@ -143,17 +207,85 @@ def print(text, verbose=True, post_text='', line_len=79,
         sys.stdout.flush()
 
 
-def read_csv(file_name, **kwargs):
+def meta_length(filename, data_keys=['[DATA]'], max_lines=None, next_line=False,
+                verbose=True):
+    """
+    For text files containing meta and raw data separated by one or more keys,
+    returns the number of rows of meta data
+
+    File is read line by line until one of the data_keys is found
+
+    Ex file setup:
+        Meta name 1,value1
+        Meta name 2,value2
+        .
+        .
+        .
+        [data]
+        Data name 1,Data name 2,...,Data name X
+        1,2,...,8
+        2,3,...,10
+
+    Args:
+        filename (str):  string path to the file of interest
+        data_keys (list | str):  keywords in the file used to designate the meta
+            region from the rest of the file
+        max_lines (None | int):  set a limit on how many lines of the file
+            are checked
+        next_line (bool):  optionally return the next line in the file if data key
+            is found
+        verbose (bool):  toggle printing of warnings
+
+    Returns:
+        int number of rows for the meta section of a file, optional line after
+        the data separator with next_line = True
+
+    """
+
+    # Ensure data_keys is a list
+    data_keys = validate_list(data_keys)
+
+    # Check if file exists
+    exists = check_file(filename, verbose)
+    if not exists:
+        return -1
+
+    # Parse the meta section of the file
+    with open(filename, 'r') as file:
+        for iline, line in enumerate(file):
+            found = any(key in line for key in data_keys)
+            if found and next_line:
+                return iline + 1, next(file).strip('\r').strip('\n')
+            elif found:
+                return iline + 1
+            if max_lines is not None and iline + 1 >= max_lines:
+                return -1
+        return -1
+
+
+def read_csv(filename, data_key=None, sep_meta=None, **kwargs):
     """
     Wrapper for pandas.read_csv to deal with kwargs overload
 
     Args:
-        file_name (str): filename
+        filename (str): filename
+        data_key (None | list | str):  keys to separate the data file into
+            a meta and data section; uses meta_length to find the split between
+            sections
+        sep_meta (None | str):  optional different character for parsing
+            the meta section
         **kwargs: valid keyword arguments for pd.read_csv
 
     Returns:
-        pandas.DataFrame containing the csv data
+        pandas.DataFrame containing the csv data and optional meta dataframe
     """
+
+    verbose = kwargs.get('verbose', True)
+
+    # Check if file exists
+    exists = check_file(filename, verbose)
+    if not exists:
+        return -1
 
     # kwargs may contain values that are not valid in the read_csv function;
     #  we need to filter those out first before calling the function
@@ -172,11 +304,107 @@ def read_csv(file_name, **kwargs):
                  'verbose', 'encoding', 'squeeze', 'mangle_dupe_cols',
                  'tupleize_cols', 'infer_datetime_format', 'skip_blank_lines']
 
+    # Deal with keywords
     delkw = [f for f in kwargs.keys() if f not in kw_master]
     for kw in delkw:
         kwargs.pop(kw)
+    if 'skipinitialspace' not in kwargs.keys():
+        kwargs['skipinitialspace'] = True
 
-    return pd.read_csv(file_name, **kwargs)
+    # Read the data section
+    df = pd.read_csv(filename, **kwargs)
+
+    return df
+
+
+def read_data(filename, data_key=None, sep_meta=None, **kwargs):
+    """
+    Wrapper for pandas.read_csv to deal with kwargs overload
+
+    Args:
+        filename (str): filename
+        data_key (None | list | str):  keys to separate the data file into
+            a meta and data section; uses meta_length to find the split between
+            sections
+        sep_meta (None | str):  optional different character for parsing
+            the meta section
+        **kwargs: valid keyword arguments for pd.read_csv
+
+    Returns:
+        pandas.DataFrame containing the csv data and optional meta dataframe
+    """
+
+    verbose = kwargs.get('verbose', True)
+
+    # Check if file exists
+    exists = check_file(filename, verbose)
+    if not exists:
+        return -1, -1
+
+    # Check for a meta section
+    if data_key is not None:
+        skiprows = meta_length(filename, data_key, verbose=verbose)
+    else:
+        skiprows = None
+
+    # Read the data section
+    df = read_csv(filename, skiprows=skiprows, **kwargs)
+
+    # Read the meta section
+    if data_key is not None and skiprows > 0:
+        if sep_meta is None:
+            if 'sep' in kwargs.keys():
+                sep_meta = kwargs['sep']
+            else:
+                sep_meta = ','
+        meta = read_meta(filename, data_key, sep_meta, verbose=verbose)
+        return df, meta
+
+    else:
+        return df
+
+
+def read_meta(filename, data_keys, sep=',', max_lines=None, verbose=True):
+    """
+    Read the meta section of a data file containing meta and raw data
+
+    Args:
+        filename (str): path to data
+        data_keys (list | str):  keywords in the file used to designate the meta
+            region from the rest of the file
+        sep (str): delimiter for meta data
+        max_lines (None | int):  set a limit on how many lines of the file
+            are checked
+        verbose (bool):  toggle printing of warnings
+
+    Returns:
+        pd.DataFrame of meta data or -1 if file does not exist
+
+    """
+
+    # Check if file exists
+    exists = check_file(filename, verbose)
+    if not exists:
+        return -1
+
+    # Get number of lines
+    if max_lines is None:
+        skiprows = meta_length(filename, data_keys)
+
+    key = []
+    val = []
+    with open(filename, 'r') as file:
+        for iline, line in enumerate(file):
+            if iline < skiprows - 1:
+                vals = line.split(sep)
+                key += [vals[0]]
+                val += [str_2_dtype(vals[1].lstrip(' ')
+                        .strip('\n').strip('\r'))]
+
+    meta = pd.DataFrame(val).T
+    meta.columns = key
+
+    return meta
 
 
 def set_filemode(name, stmode='r'):
@@ -315,3 +543,63 @@ def str_2_dtype(val, ignore_list=False):
                     return val
 
 
+def write_data(filename, df, meta=None, data_key='[DATA]', align=False, **kwargs):
+    """
+    Write data files containing a meta section, separator keyword, and raw data
+
+    Args:
+        filename (str): output file path
+        df (pd.DataFrame):  DataFrame to save
+        meta (None | pd.DataFrame): optional meta data to proceed the
+            data section
+        data_key (str): separator between meta and df
+        align (bool): pad values to align csv and make it more human readable
+
+    Returns:
+        None
+
+    """
+
+    sep_meta = kwargs.get('sep_meta', ',')
+    sep = kwargs.get('sep', ',')
+    first_col = kwargs.get('first_col', 0)
+    rjust = kwargs.get('rjust', True)
+
+    # Write meta data
+    if meta is not None:
+        meta.T.to_csv(filename, mode='w', header=False, sep=sep_meta)
+
+    # Write data separator
+    if meta is not None:
+        mode = 'a'
+        with open(filename, mode) as output:
+            output.write('%s\n' % data_key)
+    else:
+        mode = 'w'
+
+    # Align the raw data
+    df = align_values(df, first_col=first_col, rjust=rjust) if align else df
+
+    # Write the raw data
+    df.to_csv(filename, index=False, mode=mode, sep=sep)
+
+
+def validate_list(items):
+    """
+    Make sure a list variable is actually a list and not a single string
+
+    Args:
+        items (str|list): values to check dtype
+
+    Return:
+        items as a list
+    """
+
+    if items is None:
+        return None
+    if type(items) is tuple:
+        return list(items)
+    elif type(items) is not list:
+        return [items]
+    else:
+        return items

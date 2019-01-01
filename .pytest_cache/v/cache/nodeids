@@ -1,0 +1,7 @@
+[
+  "fileio/tests/test_reader.py::test_meta_length",
+  "fileio/tests/test_reader.py::test_read_csv",
+  "fileio/tests/test_reader.py::test_read_data",
+  "fileio/tests/test_reader.py::test_write_data",
+  "fileio/tests/test_reader.py::test_align_values"
+]
