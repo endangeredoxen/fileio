@@ -454,8 +454,9 @@ def str_2_dtype(val, ignore_list=False):
     chars = {'\\t':'\t', '\\n':'\n', '\\r':'\r'}
 
     # Remove comments
-    v = val.split('#')
+    v = re.split("#(?=([^\"]*\"[^\"]*\")*[^\"]*$)", val)
     if len(v) > 1:  # handle comments
+        v = [f for f in v if f is not None]
         if v[0] == '':
             val = '#' + v[1].rstrip().lstrip()
         else:
