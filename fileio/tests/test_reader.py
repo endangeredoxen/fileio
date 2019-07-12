@@ -99,6 +99,14 @@ def test_write_data():
     assert meta.loc[0, 'Meta1'] == 1
     os.remove('test.csv')
 
+    file = osjoin(DIR, 'data_key_example.csv')
+    df, meta = fileio.utilities.read_data(file, data_key='[DATA]')
+    fileio.utilities.write_data('test.csv.gz', df, meta, data_key='[DATA]')
+    df, meta = fileio.utilities.read_data('test.csv.gz', data_key='[DATA]')
+    assert df.loc[0, 'Coheed'] == 1
+    assert meta.loc[0, 'Meta1'] == 1
+    os.remove('test.csv.gz')
+
 
 def test_align_values():
 
