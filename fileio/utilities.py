@@ -180,6 +180,25 @@ def convert_rst(file_name, stylesheet=None):
                 output.write(html)
 
 
+def get_mtime(file):
+    """
+    Get the modified time of a file
+        Handles exceptions
+
+    Args:
+        file (str): filename
+
+    Returns:
+        modified timestamp
+
+    """
+
+    try:
+        return os.path.getmtime(file)
+    except:
+        return 0
+
+
 def print(text, verbose=True, post_text='', line_len=79,
           start='\r', end='\n', **kwargs):
     """
@@ -353,7 +372,9 @@ def read_data(filename, data_key=None, sep_meta=None, **kwargs):
     # Read the meta section
     if data_key is not None and skiprows > 0:
         if sep_meta is None:
-            if 'sep' in kwargs.keys():
+            if 'sep_meta' in kwargs.keys():
+                sep_meta = kwargs['sep_meta']
+            elif 'sep' in kwargs.keys():
                 sep_meta = kwargs['sep']
             else:
                 sep_meta = ','
