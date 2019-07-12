@@ -20,6 +20,7 @@ import re
 import ast
 import stat
 import sys
+import gzip
 try:
     import win32clipboard
 except Exception:
@@ -29,6 +30,14 @@ osjoin = os.path.join
 osexists = os.path.exists
 st = pdb.set_trace
 print_std = print
+
+
+def _is_gz(filename):
+    """
+    Check if gzip compressed by file extension
+     (not supporting arbitrary compression types here)
+    """
+    return True if filename[-3:] == '.gz' else False
 
 
 def align_values(df, rjust=True, first_col=2):
@@ -269,8 +278,7 @@ def meta_length(filename, data_keys=['[DATA]'], max_lines=None, next_line=False,
     if not exists:
         return -1
 
-    # Parse the meta section of the file
-    with open(filename, 'r') as file:
+    def _parse_meta(file):
         for iline, line in enumerate(file):
             found = any(key in line for key in data_keys)
             if found and next_line:
@@ -280,6 +288,14 @@ def meta_length(filename, data_keys=['[DATA]'], max_lines=None, next_line=False,
             if max_lines is not None and iline + 1 >= max_lines:
                 return -1
         return -1
+
+    # Parse the meta section of the file
+    if _is_gz(filename):
+        with gzip.open(filename, "rt") as file:
+            return _parse_meta(file)
+
+    with open(filename, 'r') as file:
+        return _parse_meta(file)
 
 
 def read_csv(filename, data_key=None, sep_meta=None, **kwargs):
@@ -412,20 +428,26 @@ def read_meta(filename, data_keys, sep=',', max_lines=None, verbose=True):
     if max_lines is None:
         skiprows = meta_length(filename, data_keys)
 
-    key = []
-    val = []
-    with open(filename, 'r') as file:
+    def _parse_meta(file):
+        key = []
+        val = []
         for iline, line in enumerate(file):
             if iline < skiprows - 1:
                 vals = line.split(sep)
                 key += [vals[0]]
                 val += [str_2_dtype(vals[1].lstrip(' ')
                         .strip('\n').strip('\r'))]
+        meta = pd.DataFrame(val).T
+        meta.columns = key
 
-    meta = pd.DataFrame(val).T
-    meta.columns = key
+        return meta
 
-    return meta
+    if _is_gz(filename):
+        with gzip.open(filename, "rt") as file:
+            return _parse_meta(file)
+    else:
+        with open(filename, 'r') as file:
+            return _parse_meta(file)
 
 
 def set_filemode(name, stmode='r'):
