@@ -81,7 +81,8 @@ class FileReader():
         self.gui = kwargs.get('gui', False)
         self.labels = kwargs.get('labels', [])
         self.meta2df = kwargs.get('meta2df', True)
-        self.scan = kwargs.get('scan', False)
+        self.mod_time = kwargs.get('mod_time', False)
+        self.scan = kwargs.get('scan', True)
         self.read = kwargs.get('read', True)
         self.include_filename = kwargs.get('include_filename', True)
         self.split_char = kwargs.get('split_char', ['_'])
@@ -150,13 +151,20 @@ class FileReader():
                 self.file_df.Filepath.apply(lambda x: x.split(os.sep)[-1])
             self.file_df['ext'] = \
                 self.file_df.Filename.apply(lambda x: os.path.splitext(x)[-1])
+            if self.mod_time:
+                self.file_df['Modified Time'] = \
+                    self.file_df['Filepath'].apply(lambda x: util.get_mtime(x))
 
         # Add split values
         for irow, row in self.file_df.iterrows():
             split_vals = self.parse_filename(row['Filename'])
             for k, v in split_vals.items():
-                self.file_df.loc[irow, k] = \
-                    util.str_2_dtype(v, ignore_list=True)
+                try:
+                    self.file_df.loc[irow, k] = \
+                        util.str_2_dtype(v, ignore_list=True)
+                except:
+                    self.file_df.loc[irow, k] = \
+                        str(util.str_2_dtype(v, ignore_list=True))
 
         return self
 
@@ -381,39 +389,6 @@ class FileReader():
             if len(self.meta) > 0:
                 self.meta = \
                     pd.concat(self.meta, axis=1).reset_index(drop=True) \
-                        if self.meta2df else self.meta
-            elif self.meta2df:
-                self.meta = pd.DataFrame()
-
-    def walk_dir(self, path):
-        """
-        Walk through a directory and its subfolders to find file names
-
-        Args:
-            path (str): top level directory
-
-        """
-
-        for dir_name, subdir_list, file_list in oswalk(path):
-            for exc in self.exclude:
-                subdir_list[:] = [s for s in subdir_list if exc not in s]
-            self.file_list += [os.path.join(dir_name, f) for f in file_list]
-
-            # Add filename
-            if self.include_filename:
-                temp['Filename'] = f
-                if meta is not None:
-                    meta.ix['Filename', :] = f
-            self.df += [temp]
-            if meta is not None:
-                self.meta += [meta]
-
-        if self.concat and len(self.df) > 0:
-            self.temp = temp
-            self.df = pd.concat(self.df, axis=0)
-            if len(self.meta) > 0:
-                self.meta = \
-                    pd.concat(self.meta, axis=1).T.reset_index(drop=True) \
                         if self.meta2df else self.meta
             elif self.meta2df:
                 self.meta = pd.DataFrame()
