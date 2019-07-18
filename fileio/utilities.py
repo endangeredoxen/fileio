@@ -435,8 +435,11 @@ def read_meta(filename, data_keys, sep=',', max_lines=None, verbose=True):
             if iline < skiprows - 1:
                 vals = line.split(sep)
                 key += [vals[0]]
-                val += [str_2_dtype(vals[1].lstrip(' ')
-                        .strip('\n').strip('\r'))]
+                try:
+                    val += [str_2_dtype(vals[1].lstrip(' ')
+                            .strip('\n').strip('\r'))]
+                except:
+                    st()
         meta = pd.DataFrame(val).T
         meta.columns = key
 
@@ -492,6 +495,8 @@ def str_2_dtype(val, ignore_list=False):
     Returns:
         val with the interpreted data type
     """
+    if len(val) == 0:
+        return ''
 
     # Special chars
     chars = {'\\t':'\t', '\\n':'\n', '\\r':'\r'}
