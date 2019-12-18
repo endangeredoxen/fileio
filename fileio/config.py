@@ -27,7 +27,7 @@ st = pdb.set_trace
 
 
 class ConfigFile():
-    def __init__(self, path=None, paste=False, raw=False):
+    def __init__(self, path=None, paste=False, raw=False, header=False):
         """
         Config file reader
 
@@ -45,6 +45,7 @@ class ConfigFile():
         self.config_path = path
         self.config = configparser.RawConfigParser()
         self.config_dict = {}
+        self.header = None
         self.is_valid = False
         self.paste = paste
         self.raw = raw
@@ -63,6 +64,27 @@ class ConfigFile():
                              'following location: %s' % self.config_path)
 
         self.make_dict()
+
+        if header:
+            self.get_header()
+
+    def get_header(self):
+        """
+        Read any comment lines above the first section and call it a header
+        """
+
+        header = []
+        with open(self.config_path, 'r') as input:
+            line = input.readline()
+            while line:
+                if line.lstrip(' ')[0] in ['#', ';', '\n']:
+                    header += [line]
+                    line = input.readline()
+                else:
+                    break
+
+        if len(header) > 0:
+            self.header = ''.join(header)
 
     def make_dict(self):
         """
@@ -108,3 +130,17 @@ class ConfigFile():
                 self.config_path = osjoin(self.rel_path, self.config_path)
                 self.is_valid = True
 
+    def write(self, filename):
+        """
+        Write self.dict back to a config file
+        """
+
+        with open(filename, 'w') as output:
+            if self.header:
+                output.write(self.header)
+            for i, (k, v) in enumerate(self.config_dict.items()):
+                if i > 0:
+                    output.write('\n')
+                output.write('[{}]\n'.format(k.upper()))
+                for kk, vv in v.items():
+                    output.write('{} = {}\n'.format(kk, vv))
