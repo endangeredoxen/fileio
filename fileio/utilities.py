@@ -613,7 +613,7 @@ def write_data(filename, df, meta=None, data_key='[DATA]', align=False, **kwargs
     first_col = kwargs.get('first_col', 0)
     rjust = kwargs.get('rjust', True)
 
-    compression = 'gzip' if _is_gz(filename) else False
+    compression = 'gzip' if _is_gz(filename) else None
 
     # Write meta data
     if meta is not None:
@@ -624,22 +624,25 @@ def write_data(filename, df, meta=None, data_key='[DATA]', align=False, **kwargs
         output.write('%s\n' % data_key)
 
     # Write data separator
-    if meta is not None:
+    mode, is_header = 'a', True   # pandas doesn't need the binary/ascii distinction
+    if meta is None:
+        if os.path.isfile(filename):
+            is_header = False
+        else:
+            mode = 'w'
+    else:
         if _is_gz(filename):
             with gzip.open(filename, 'at') as output:
                 _write_separator(output)
         else:
             with open(filename, 'a') as output:
                 _write_separator(output)
-        mode = 'a'  # pandas doesn't need the binary/ascii distinction
-    else:
-        mode = 'w'
 
     # Align the raw data
     df = align_values(df, first_col=first_col, rjust=rjust) if align else df
 
     # Write the raw data
-    df.to_csv(filename, index=False, mode=mode, sep=sep, compression=compression)
+    df.to_csv(filename, index=False, mode=mode, sep=sep, compression=compression, header=is_header)
 
 
 def validate_list(items):
