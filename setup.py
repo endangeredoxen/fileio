@@ -6,15 +6,15 @@ https://github.com/pypa/sampleproject
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
-# To use a consistent encoding
-from codecs import open
 from os import path
-
-here = path.abspath(path.dirname(__file__))
+import pdb
 
 # Get the long description from the README file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
+with open('README.md') as f:
     long_description = f.read()
+pdb.set_trace()
+with open(path.join(here, 'fivecentfileio', 'version.txt'), 'r') as input:
+    __version__ = input.readlines()[0]
 
 setup(
     name='fivecentfileio',
@@ -22,13 +22,15 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # https://packaging.python.org/en/latest/single_source_version.html
-    version='0.2.8',
+    version=__version__,
 
-    description='file reading/writing utilities',
+    description='custom file reading/writing utilities',
     long_description=long_description,
+    long_description_content_type="text/markdown",
 
     # The project's main homepage.
     url='https://github.com/endangeredoxen/fivecentfileio',
+    download_url='https://github.com/endangeredoxen/fivecentfileio/archive/v0.2.9.tar.gz',
 
     # Author details
     author='Steve Nicholes',
@@ -56,6 +58,7 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python :: 3',
     ],
+    python_requires='>=3.6',
 
     # What does your project relate to?
     keywords='data',

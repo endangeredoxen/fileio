@@ -1,8 +1,9 @@
 __author__    = 'Steve Nicholes'
 __copyright__ = 'Copyright (C) 2017 Steve Nicholes'
 __license__   = 'GPLv3'
-__version__   = '0.2.8'
-__url__       = 'https://github.com/endangeredoxen/fileio'
+with open(os.path.join(os.path.dirname(__file__), r'version.txt'), 'r') as input:
+    __version__ = input.readlines()[0]
+__url__       = 'https://github.com/endangeredoxen/fivecentfileio'
 
 from . config import ConfigFile
 from . html import Dir2HTML
