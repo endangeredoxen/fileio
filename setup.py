@@ -7,12 +7,10 @@ https://github.com/pypa/sampleproject
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 from os import path
-import pdb
 
 # Get the long description from the README file
 with open('README.md') as f:
     long_description = f.read()
-pdb.set_trace()
 with open(path.join(here, 'fivecentfileio', 'version.txt'), 'r') as input:
     __version__ = input.readlines()[0]
 
