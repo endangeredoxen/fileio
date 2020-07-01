@@ -1,3 +1,5 @@
+import os
+
 __author__    = 'Steve Nicholes'
 __copyright__ = 'Copyright (C) 2017 Steve Nicholes'
 __license__   = 'GPLv3'
