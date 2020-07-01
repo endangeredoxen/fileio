@@ -11,7 +11,7 @@ from os import path
 # Get the long description from the README file
 with open('README.md') as f:
     long_description = f.read()
-with open(path.join(here, 'fivecentfileio', 'version.txt'), 'r') as input:
+with open(path.join('fivecentfileio', 'version.txt'), 'r') as input:
     __version__ = input.readlines()[0]
 
 setup(
