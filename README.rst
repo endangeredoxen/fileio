@@ -1,1 +1,3 @@
-pip install https://github.com/endangeredoxen/fileio/zipball/master
+file reading utilities
+
+pip install fivecentfileio
